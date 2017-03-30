@@ -5,6 +5,9 @@ QNickSvgAutoFit是地图控制插件
 
 QNickSvgAutoFit is map controller, it can be scale map and auto fit click area.
 
+# Demo
+[ViewDemo](http://nickspace.cn/QNickSvgAutoFit/demo/)
+
 ## How it works
 
 - It work base on [Snap.svg](http://snapsvg.io/) 
