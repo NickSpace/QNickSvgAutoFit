@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no" name="viewport"/>
+    <title>MapModule</title>
+    <script src="./js/jquery-2.1.1.min.js"></script>
+    <script src="./js/snap.svg-min.js"></script>
+    <script src="./js/jquery.svg_autofit.1.0.2.min.js"></script>
+    <script src="./js/chinaMapConfig.js"></script>
+    <script>
+        $(window).load(function(){
+            $('#svg').on('onLoad',function(e,mapCtrl){
+                // mapCtrl.autoScale('zhejiang');
+                console.log('Type2 : Loaded Complete Master~');
+            });
+            var option = {
+                mapData:chinaMapConfig
+                ,onClick:function(e){
+                    console.log('Type1:你选择了['+$(e).find('text').text()+']');
+                },onLoad:function(e){
+                    console.log('Type1 : Loaded Complete Master~');
+                }
+            }
+            ,status = {     //turn on debug mode then get numbers
+                'mapScale' : 1.5  
+                ,'centerX' : 333  
+                ,'centerY' : 222  
+                ,'moveX' : -181   
+                ,'moveY' : -62    
+            };
+            var mapCtrl = $('#svg').QNickSvgAutoFit(option,status);
+            mapCtrl.on('onClick',function(e,target){
+                console.log('Type2:你选择了['+$(target).find('text').text()+']');
+            });
+            $('#svg').on('onClick',function(e,target){
+                console.log('Type3:你选择了['+$(target).find('text').text()+']');
+            });
+            mapCtrl.on('onLoad',function(){
+                console.log('Nothig to do~');
+            });
+
+
+            // 放大按钮
+            $(".btn").on('click',function(){
+                var val = $(this).val();
+                mapCtrl.scaleMap(val);
+            });
+
+            $("#btn_fit").on('click',function(){
+                mapCtrl.customScale(1.5,{'x':424,'y':370},{'x':-272,'y':-210});
+            });
+            $("#btn_auto_fit").on('click',function(){
+                mapCtrl.autoFit();
+            });
+            $("#zhejiang").on('click',function(){
+                mapCtrl.autoScale('zhejiang');
+            });
+    
+        });
+    </script>
+    <style>
+        body{background: #ccc}
+        #map{border: 1px solid #999;background: #F3F4F7;width: 304px;height: 320px;overflow: hidden;}
+        #svg{width: 100%;height: 100%;}
+    </style>
+</head>
+<body>
+    <div id="map">
+        <svg id="svg">
+        </svg>
+    </div>
+    <input class="btn" id="button1" type="button" value="0.5">
+    <input class="btn" id="button2" type="button" value="1">
+    <input class="btn" id="button3" type="button" value="2">
+    <input class="btn" id="button4" type="button" value="2.5">
+    <input class="btn" id="button5" type="button" value="5">
+    <input id="zhejiang" type="button" value="浙江">
+    <input id="btn_fit" type="button" value="custom">
+    <input id="btn_auto_fit" type="button" value="autoFit">
+</body>
+</html>
