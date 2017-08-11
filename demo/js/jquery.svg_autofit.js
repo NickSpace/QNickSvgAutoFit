@@ -1,4 +1,4 @@
-/*! QNickSvgAutoFit.JS - v1.0.2 - 2017-03-30
+/*! QNickSvgAutoFit.JS - v1.0.3 - 2017-04-01
  * http://nickspace.cn/
  *
  * Copyright (c) 2017 Nick Quan;
@@ -6,7 +6,7 @@
 ;(function ( $, w, d, Snap, undefined ) { 
 
     var pluginName = 'QNickSvgAutoFit'
-    , methods = ['customScale','scaleMap','autoScale','autoFit']
+    , methods = ['customScale','scaleMap','autoScale','autoFit','getStatus']
     , defaults = { 
         maxScale: 3
         ,minScale: 0.6
@@ -59,13 +59,13 @@
             this.setMap();
 
             $(d).on('touchstart',function(e){
-                if(!thisObj._status.touchstart){                    
+                if(!thisObj._status.touchstart){
                     thisObj.docTouchstart = e;
                     thisObj._status.eventLock = true;
                 }
             });
             $(d).on('mousedown',function(e){
-                if(!thisObj._status.mousedown){     
+                if(!thisObj._status.mousedown){
                     thisObj.docMousedown = e;
                     thisObj._status.eventLock = true;
                 }
@@ -136,7 +136,7 @@
                 if(dragX == 0, dragY == 0){
                     this._status.clickX = e2.layerX;
                     this._status.clickY = e2.layerY;
-                    
+
                     var target = thisObj.fillterTarget(e2);
                     if(target){
                         thisObj.onClick(target,e2.layerX,e2.layerY);
@@ -283,15 +283,15 @@
         }
         ,customScale: function(scale,center,position,opt) {
             this._status.moveX = this.numRound(position.x,3);
-            this._status.moveY = this.numRound(position.y,3);  
+            this._status.moveY = this.numRound(position.y,3);
             this._status.centerX = this.numRound(center.x,3);
-            this._status.centerY = this.numRound(center.y,3);                 
-            
+            this._status.centerY = this.numRound(center.y,3);
+
             this.scaleMap(scale,opt);
             this.debug();
         }
         ,autoScale: function(e,opt) {
-            
+
             var o = this.options
             ,thisObj = this.element;
 
@@ -317,10 +317,18 @@
             ,scaleHorizon = this.numRound(scaleWidth / thisBox.width)
             ,scaleVertical = this.numRound(scaleHeight / thisBox.height)
             ,autoScale = (scaleHorizon>scaleVertical)?scaleVertical:scaleHorizon;
-            
+
             autoScale = this.numRound((autoScale>o.maxScale)?o.maxScale:autoScale);
             autoScale = this.numRound((autoScale>o.minScale)?autoScale:o.minScale);
             this.customScale(autoScale,center,position,opt);
+            return {
+                'mapScale' : autoScale      //放大比例
+                ,'centerX' : center.x    //缩放中心点x坐标
+                ,'centerY' : center.y    //缩放中心点y坐标
+                ,'moveX' : position.x    //横向移动x坐标
+                ,'moveY' : position.y    //纵向移动y坐标
+                ,'target' : e    //指向的对象
+            }
         }
         ,autoFit: function(opt){
 
@@ -347,17 +355,25 @@
             ,scaleHorizon = this.numRound(scaleWidth / thisBox.width)
             ,scaleVertical = this.numRound(scaleHeight / thisBox.height)
             ,autoScale = (scaleHorizon>scaleVertical)?scaleVertical:scaleHorizon;
-            
+
             autoScale = this.numRound((autoScale>o.maxScale)?o.maxScale:autoScale);
             autoScale = this.numRound((autoScale>o.minScale)?autoScale:o.minScale);
             this.customScale(autoScale,center,position,opt);
+            return {
+                'mapScale' : autoScale      //放大比例
+                ,'centerX' : center.x    //缩放中心点x坐标
+                ,'centerY' : center.y    //缩放中心点y坐标
+                ,'moveX' : position.x    //横向移动x坐标
+                ,'moveY' : position.y    //纵向移动y坐标
+                ,'target' : e    //指向的对象
+            }
         }
 
         //放大缩小SVG
         ,scaleMap: function(toScale,opt) {
 
             var s = this._status;
-            var o = this.options;
+            var o = $.extend({}, this.options, opt);
             var scale = toScale/s.mapScale;
             s.mapScale = toScale;
 
@@ -365,16 +381,20 @@
             m_s.add(1,0,0,1,s.moveX,s.moveY);
 
             var duration = o.scaleDuration;
-            
+
             m_s.scale(s.mapScale, s.mapScale,s.centerX,s.centerY);
-            this._map.animate({'transform':m_s}, duration, mina.easeinout);
+            if(duration == 0){
+                this._map.transform(m_s);
+            }else{
+                this._map.animate({'transform':m_s}, duration, mina.easeinout);
+            }
             this.debug();
         }
         ,moveMap: function(x,y){
             var s = this._status;
             this._status.moveX = this._status.moveX + this.numRound(x,3);
             this._status.moveY = this._status.moveY + this.numRound(y,3);
-            this.scaleMap(this._status.mapScale);
+            // this.scaleMap(this._status.mapScale);
             this.setCenter();
             this.debug();
         }
@@ -388,12 +408,11 @@
             var o = this.options;
             this.setScaleCenterPoint(point);
             this.debug({fill:'#00bd00',stroke:'#6aff2c'});
-            this.autoScale(target);
+            var status = this.autoScale(target);
             if(typeof(o.onClick)==='function'){
-                o.onClick(target);
+                o.onClick(status);
             }
-
-            $(this.element).trigger('onClick',target);
+            $(this.element).trigger('onClick',status);
             this.debug();
         }
         ,setTarget: function(e){
@@ -424,22 +443,22 @@
             svg_move.x = s.moveX;
             svg_move.y = s.moveY;
 
-            
+
             map_point.x = this.numRound(s.centerX+(point.x-s.centerX)/s.mapScale - s.moveX / s.mapScale);
             map_point.y = this.numRound(s.centerY+(point.y-s.centerY)/s.mapScale - s.moveY / s.mapScale);
 
             add_move.x = point.x - map_point.x-s.moveX;
             add_move.y = point.y - map_point.y-s.moveY;
             this._status.moveX = this.numRound(s.moveX + add_move.x);
-            this._status.moveY = this.numRound(s.moveY + add_move.y); 
+            this._status.moveY = this.numRound(s.moveY + add_move.y);
             this._status.centerX = this.numRound(map_point.x,3);
-            this._status.centerY = this.numRound(map_point.y,3);       
+            this._status.centerY = this.numRound(map_point.y,3);
         }
 
         ,setCenter: function(){
             var e = this.element;
             var point = {x:$(e).width()/2,y:$(e).height()/2};
-            this.setScaleCenterPoint(point);              
+            this.setScaleCenterPoint(point);
         }
 
         ,getEventTypeName: function(obj){
@@ -448,7 +467,7 @@
 
 
         // 获取（透明颜色+白底）颜色值
-        ,opacityColor: function(color, percent) {  
+        ,opacityColor: function(color, percent) {
             percent = 1 - percent;
             var f=parseInt(color.slice(1),16)
             ,t=percent<0?0:255
@@ -492,7 +511,7 @@
                     if(i != 'mousedown' && i != 'touchstart'){
                         if(i == 'target' ){
                             var text = ($(e).attr('name'))?'[object]'+$(e).attr('name'):e;
-                            
+
                             html += '<p>'+i+':'+text+'</p>';
                         }else{
                             html += '<p>'+i+':'+e+'</p>';
@@ -509,14 +528,14 @@
         }
         ,appendDebugTag: function(){
             var tag = '';
-            tag += '<div id="'+pluginName+'_debug" style="position: absolute;top: 0;right: 0;padding: 20px;background: rgba(255,255,255,0.7);line-height: 5px;">';      
-            tag += '</div>';   
-            return tag;   
-        
+            tag += '<div id="'+pluginName+'_debug" style="position: absolute;top: 0;right: 0;padding: 20px;background: rgba(255,255,255,0.7);line-height: 5px;">';
+            tag += '</div>';
+            return tag;
+
         }
     };
 
-    
+
     $.fn[pluginName] = function ( options, status ) { //플러그인 함수 
         return this.each(function () { 
             if (!$.data(this, 'plugin_' + pluginName)) { 
@@ -526,17 +545,19 @@
     }
 
     $(methods).each(function(k,v){
+        var return_val = undefined;
         $.fn[v] = function(a,b,c,d,e,f,g,h,i,j){
-            this.each(function () { 
+            this.each(function (k,e) {
                 if ($.data(this, 'plugin_' + pluginName)) { 
                     thisObj = $.data(this, 'plugin_' + pluginName);
                     if(typeof(thisObj[v]) === 'function'){
-                        thisObj[v](a,b,c,d,e,f,g,h,i,j);
+                        return_val = thisObj[v](a,b,c,d,e,f,g,h,i,j);
                     }else{
                         console.error(pluginName+': ['+v+'] method not defined!');
                     }
                 } 
             }); 
+            return return_val;
         }
     });
 })(jQuery, window, document, Snap);
